@@ -1,3 +1,4 @@
+using ExoApi.Exceptions;
 using ExoApi.Interfaces;
 using ExoApi.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,8 @@ namespace ExoApi.Controllers;
 [Route("api/[controller]")]
 public class ProjetosController : ControllerBase
 {
+    private static readonly string[] StatusValidos = { "Planejado", "EmAndamento", "Concluido", "Cancelado" };
+
     private readonly IProjetoRepository _repo;
 
     public ProjetosController(IProjetoRepository repo)
@@ -27,7 +30,7 @@ public class ProjetosController : ControllerBase
         var projeto = _repo.BuscarPorId(id);
         if (projeto == null)
         {
-            return NotFound();
+            throw new NaoEncontradoException($"Projeto com Id {id} não foi encontrado.");
         }
 
         return Ok(projeto);
@@ -36,20 +39,25 @@ public class ProjetosController : ControllerBase
     [HttpPost]
     public IActionResult Cadastrar(Projeto projeto)
     {
+        ValidarStatus(projeto.Status);
+
         var criado = _repo.Cadastrar(projeto);
-        return CreatedAtAction(nameof(BuscarPorId), new { id = criado.Id }, criado);
+        return CreatedAtAction(nameof(BuscarPorId), new { id = criado.Id },
+            new SucessoResposta(StatusCodes.Status201Created, "Projeto cadastrado com sucesso.", criado));
     }
 
     [HttpPut("{id}")]
     public IActionResult Atualizar(int id, Projeto projeto)
     {
+        ValidarStatus(projeto.Status);
+
         var atualizado = _repo.Atualizar(id, projeto);
         if (atualizado == null)
         {
-            return NotFound();
+            throw new NaoEncontradoException($"Projeto com Id {id} não foi encontrado.");
         }
 
-        return Ok(atualizado);
+        return Ok(new SucessoResposta(StatusCodes.Status200OK, "Projeto atualizado com sucesso.", atualizado));
     }
 
     [HttpDelete("{id}")]
@@ -58,9 +66,18 @@ public class ProjetosController : ControllerBase
         var deletou = _repo.Deletar(id);
         if (!deletou)
         {
-            return NotFound();
+            throw new NaoEncontradoException($"Projeto com Id {id} não foi encontrado.");
         }
 
-        return NoContent();
+        return Ok(new SucessoResposta(StatusCodes.Status200OK, "Projeto excluído com sucesso."));
+    }
+
+    private static void ValidarStatus(string status)
+    {
+        if (!StatusValidos.Contains(status, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new RegraDeNegocioException(
+                "Status inválido. Use: " + string.Join(", ", StatusValidos) + ".");
+        }
     }
 }
