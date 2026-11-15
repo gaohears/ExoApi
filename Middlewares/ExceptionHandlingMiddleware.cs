@@ -30,6 +30,10 @@ public class ExceptionHandlingMiddleware
         {
             await EscreverAsync(context, StatusCodes.Status400BadRequest, ex.Message);
         }
+        catch (CredenciaisInvalidasException ex)
+        {
+            await EscreverAsync(context, StatusCodes.Status401Unauthorized, ex.Message);
+        }
         catch (Exception ex)
         {
             // Erro inesperado: o detalhe técnico vai só para o log, nunca para o cliente

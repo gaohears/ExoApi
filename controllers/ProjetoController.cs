@@ -2,6 +2,7 @@ using ExoApi.Exceptions;
 using ExoApi.Interfaces;
 using ExoApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ExoApi.Controllers;
 
@@ -108,14 +109,17 @@ public class ProjetosController : ControllerBase
     }
 
     /// <summary>
-    /// Exclui um projeto.
+    /// Exclui um projeto. Exige usuário autenticado (token JWT).
     /// </summary>
     /// <param name="id">Id do projeto a excluir.</param>
     /// <response code="200">Projeto excluído com sucesso.</response>
+    /// <response code="401">Token ausente, inválido ou expirado.</response>
     /// <response code="404">Projeto não encontrado.</response>
     /// <response code="500">Erro interno do servidor.</response>
+    [Authorize]
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(SucessoResposta), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErroResposta), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErroResposta), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErroResposta), StatusCodes.Status500InternalServerError)]
     public IActionResult Deletar(int id)
